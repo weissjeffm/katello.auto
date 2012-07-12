@@ -72,7 +72,7 @@
 
 (def create-an-ak
   (fn [] (create-activation-key {:name (uniqueify "blah")
-                                      :environment (first conf/*environments*)})))
+                                :environment (first conf/*environments*)})))
 
 (def create-a-st
   (fn [] (create-template {:name (uniqueify "blah")})))
@@ -244,7 +244,29 @@
                   :users [user-name]}))
 
     (defddtest "Verify user with specific permission has access only to what permission allows"
-      
+      [& {:keys [permissions allowed-actions disallowed-actions setup]}]
 
-      verify-access
+      (let [rolename (uniqueify "role")
+            username (uniqueify "user-perm")
+            pw "password"]
+        (api/with-admin
+          (api/create-user username {:password pw
+                                     :email (str username "@my.org")})
+          (when setup (setup)))
+    
+        (create-role rolename)
+        (edit-role rolename {:add-permissions permissions
+                             :users [username]})
+    
+        (try
+          (let [with-perm-results (do (login username pw)
+                                      (api/with-creds username pw
+                                        (try-all allowed-actions)))
+                no-perm-results (try-all disallowed-actions)]
+            (verify-that (and (every? denied-access? (vals no-perm-results))
+                              (every? has-access? (vals with-perm-results)))))
+          (finally
+            (login conf/*session-user* conf/*session-password*))))
+
+
       access-test-data) ))
