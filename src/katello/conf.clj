@@ -38,8 +38,11 @@
    ["-e" "--environments" "A comma separated list of environment names to test with (need not already exist)"
     :parse-fn #(seq (string/split % #",")) :default '("Development" "Q-eh") ]
 
-   ["--clients" "A comma separated list of client machines to use for end to end testing must specify at least one per thread"
-    :parse-fn #(string/split % #",")]
+   ["--deltacloud-url" "A URL to deltacloud API that can be used to provision client machines for tests that require them"]
+
+   ["--deltacloud-user" "The username to log in to deltacloud api."]
+
+   ["--deltacloud-password" "The password for the deltacloud-user."]
 
    ["-a" "--selenium-address" "Address of the selenium server to connect to. eg 'host.com:4444' If none specified, an embedded selenium server is used."]
 

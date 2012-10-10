@@ -82,10 +82,12 @@
   "Wait for pred to become true on instance i (refreshing
   periodically)"
   [conn i pred]
-  (loop-with-timeout 300000 [i i]
+  (loop-with-timeout 600000 [i i]
     (if (pred i)
       i
-      (do (Thread/sleep 10000)
+      (do
+        (println i)
+        (Thread/sleep 10000)
           (recur (refresh conn i))))))
 
 (defn perform-action-wait [conn i action pred]
@@ -105,7 +107,7 @@
   
   (wait-for conn
             (-> ((conn :post) "instances" {:query-params m}) :instance)
-            stopped?))
+            (action-available-pred "start")))
 
 (defn start [conn i]
   (perform-action-wait conn i :start ip-address))
@@ -116,6 +118,32 @@
 (defn destroy [conn i]
   (perform-action-wait conn i :destroy nil?))
 
+(defn provision
+  "Create an instance, start it and wait for it to come up."
+  [conn m]
+  (start conn (create-instance conn m)))
 
+(defn unprovision "Whatever state the instance is in, destroy it"
+  [conn i]
+  (cond (stopped? i) (destroy conn i)
+        (running? i) (destroy conn (stop conn i))
+        :else (unprovision (wait-for conn i
+                                     (some-fn stopped? running?)))))
 
+(defn provision-n
+  "Provision n instances with properties m, in parallel"
+  [conn n m]
+  (->> m
+     (provision conn)
+     future
+     (fn [])
+     (repeatedly n)
+     doall
+     (map deref)))
 
+(defn unprovision-all
+  "Destroy all the given instances, in parallel."
+  [conn instances]
+  (map deref
+       (doall (for [i instances]
+                (future (unprovision conn i))))))
