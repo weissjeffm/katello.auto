@@ -58,6 +58,14 @@
 (defn instance-by-name [conn inst-name]
   (->> conn instances (filter (by-name inst-name)) first))
 
+(defn name-indexed
+  "Takes a map of instance creation parameters (such at image_id,
+etc), returns an infinite sequence of maps, each one add
+'-n' appended to the name, where n is the index."
+  [m]
+  (for [i (iterate inc 1)]
+    (update-in m [:name] #(format "%s-%d" % i))))
+
 (defn get-actions [conn i]
   (let [call-method (fn [link]
                       (let [method (-> link :method keyword conn)]
@@ -86,11 +94,13 @@
     (if (pred i)
       i
       (do
-        (println i)
+        #_(prn (select-keys i [:name :state :public_addresses :actions]))
         (Thread/sleep 10000)
           (recur (refresh conn i))))))
 
-(defn perform-action-wait [conn i action pred]
+(defn perform-action-wait
+  "Performs action on instance i, waits for pred to become true."
+  [conn i action pred]
   (let [avail-actions (get-actions conn i)]
     (assert (some #{action} (keys avail-actions))
             (format "%s not one of available actions on instance: %s"
@@ -130,14 +140,12 @@
         :else (unprovision (wait-for conn i
                                      (some-fn stopped? running?)))))
 
-(defn provision-n
-  "Provision n instances with properties m, in parallel"
-  [conn n m]
-  (->> m
-     (provision conn)
-     future
-     (fn [])
-     (repeatedly n)
+(defn provision-all
+  "Provision instances with given properties (a list of maps), in parallel.
+   See name-indexed to easily generate such a list."
+  [conn instance-props]
+  (->> (for [inst-prop instance-props]
+       (future (provision conn inst-prop)))
      doall
      (map deref)))
 
@@ -147,3 +155,10 @@
   (map deref
        (doall (for [i instances]
                 (future (unprovision conn i))))))
+
+(defmacro with-instances [conn inst-bind & body]
+  `(let [~(first inst-bind) (provision-all ~conn ~(second inst-bind))]
+    (try
+     
+      ~@body
+      (finally (unprovision-all ~conn ~(first inst-bind))))))
