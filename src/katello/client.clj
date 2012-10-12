@@ -42,8 +42,13 @@
 (defn server-hostname []
   (-> (@config :server-url) (java.net.URL.) .getHost))
 
-(defn new-runner [hostname user password keyfile keypassphrase]
-  (SSHCommandRunner. hostname user (File. ^String keyfile) keypassphrase nil))
+(defn new-runner
+  ([hostname]
+     (SSHCommandRunner. hostname "root"
+                        (File. ^String (@config :client-ssh-key))
+                        (@config :client-ssh-key-passphrase) nil))
+  ([hostname user password keyfile keypassphrase]
+     (SSHCommandRunner. hostname user (File. ^String keyfile) keypassphrase nil)))
 
 (defn configure-client [runner m]
   (doall (for [[heading settings] m
@@ -63,18 +68,20 @@
   (let [rpm-name-prefix "candlepin-cert-consumer"
         cmds [["subscription-manager clean"] 
               ["yum remove -y '%s*'" rpm-name-prefix]
-              ["rpm -ivh http://%1$s/pub/%2$s-%1$s-1.0-1.noarch.rpm" (server-hostname) rpm-name-prefix]]]
+              ["rm -f *.rpm"]
+              ["wget -nd -r -l1 --no-parent -A \"*.noarch.rpm\" http://%s/pub/" (server-hostname)]
+              ["rpm -ivh candlepin*.noarch.rpm"]]]
     (doall (for [cmd cmds] (run-cmd runner (apply format cmd))))))
 
-(defn subscribe [poolid]
-  (sm-cmd :subscribe {:pool poolid}))
+(defn subscribe [runner poolid]
+  (sm-cmd runner :subscribe {:pool poolid}))
 
-(defn register [opts]
-  (sm-cmd :register opts))
+(defn register [runner opts]
+  (sm-cmd runner :register opts))
 
 (defn get-client-facts [runner]
   (apply hash-map (split (:stdout (run-cmd runner "subscription-manager facts --list")) #"\n|: ")))
 
-(defn get-distro []
-  ((get-client-facts) "distribution.name"))
+(defn get-distro [runner]
+  ((get-client-facts runner) "distribution.name"))
 

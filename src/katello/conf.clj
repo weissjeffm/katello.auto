@@ -3,7 +3,8 @@
             [clojure.string :as string]
             clojure.tools.cli
             selenium-server
-            [fn.trace :refer [all-fns]])
+            [fn.trace :refer [all-fns]]
+            [deltacloud :as cloud])
   
   (:import [java.io PushbackReader FileNotFoundException]
            [java.util.logging Level Logger]))
@@ -43,6 +44,8 @@
    ["--deltacloud-user" "The username to log in to deltacloud api."]
 
    ["--deltacloud-password" "The password for the deltacloud-user."]
+
+   ["--deltacloud-image-id" "The image id to use to provision clients."]
 
    ["-a" "--selenium-address" "Address of the selenium server to connect to. eg 'host.com:4444' If none specified, an embedded selenium server is used."]
 
@@ -93,16 +96,16 @@
                'katello.tasks/uniqueify-vals
                'katello.tasks/timestamps
                'katello.tasks/date-string
-               'katello.tasks/timestamped-seq})))
+               'katello.tasks/timestamped-seq
+               'katello.conf/client-defs})))
 
 
 (declare ^:dynamic *session-user*
          ^:dynamic *session-password*
          ^:dynamic *session-org*
          ^:dynamic *browsers*
+         ^:dynamic *cloud-conn*
          ^:dynamic *environments*)
-
-(def ^:dynamic *clients* nil)
 
 (defn- try-read-configs
   "try to read a config from filename, if file doesn't exist, return nil"
@@ -128,7 +131,7 @@
                          first))
   (let [non-defaults (into {}
                            (filter (fn [[k v]] (not= v (k defaults)))
-                                      opts))]
+                                   opts))]
     (swap! config merge non-defaults)) ; merge 2nd time to override anything in
                                        ; config files
 
@@ -141,15 +144,25 @@
   (def ^:dynamic *session-user* (@config :admin-user))
   (def ^:dynamic *session-password* (@config :admin-password))
   (def ^:dynamic *session-org* (@config :admin-org))
-  (def ^:dynamic *clients* (@config :clients))
+  (def ^:dynamic *cloud-conn* (cloud/connection
+                               (@config :deltacloud-url)
+                               (@config :deltacloud-user)
+                               (@config :deltacloud-password)))
   (def ^:dynamic *browsers* (@config :browser-types))
   (def ^:dynamic *environments* (@config :environments))) 
 
 
-(defn no-clients-defined "Blocks a test if no client machines are defined." [_]
-  (if (:clients @config)
+(defn no-clients-defined "Blocks a test if no client machines are accessible." [_]
+  (try
+    (cloud/instances *cloud-conn*)
     []
-    ["No clients were specified - see --clients option"]))
+    (catch Exception e [e])))
+
+(defn client-defs "Return an infinite seq of client instance property definitions."
+  [basename]
+  (cloud/name-indexed
+   (cloud/small-instance-properties {:name basename
+                                     :image-id (@config :deltacloud-image-id)})))
 
 (defmacro with-creds
   "Execute body and with the given user and password, all api calls
@@ -167,4 +180,5 @@
   [org-name & body]
    `(binding [*session-org* ~org-name]
       ~@body))
+
 

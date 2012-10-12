@@ -23,6 +23,7 @@
   you can specify :href in the req, and that will be used as the url
   and uri will be ignored."
   [baseurl username password]
+  {:pre [(and baseurl username password)]}
   (let [connectize (fn [method]
                      (fn [uri & [req]]
                        (-?> (method (or (:href req) (format "%s/%s" baseurl uri))
@@ -32,7 +33,7 @@
                                             :href))
                             :body
                             json/read-json)))
-        method-names ['http/get 'http/post 'http/delete 'http/put]
+        method-names [`http/get `http/post `http/delete `http/put]
         keywordify #(-> % str (split #"/") last keyword)]
     (zipmap (map keywordify method-names)
             (map (comp connectize resolve) method-names))))
@@ -65,6 +66,15 @@ etc), returns an infinite sequence of maps, each one add
   [m]
   (for [i (iterate inc 1)]
     (update-in m [:name] #(format "%s-%d" % i))))
+
+(defn small-instance-properties
+  "A set of properties for a small instance, requires a name and image_id."
+  [{:keys [name image-id]}]
+  {:pre [(and name image-id)]}
+  {:name name
+   :image_id image-id
+   :hwp_cpus "2"
+   :hwp_memory "256"})
 
 (defn get-actions [conn i]
   (let [call-method (fn [link]
@@ -157,7 +167,8 @@ etc), returns an infinite sequence of maps, each one add
                 (future (unprovision conn i))))))
 
 (defmacro with-instances [conn inst-bind & body]
-  `(let [~(first inst-bind) (provision-all ~conn ~(second inst-bind))]
+  `(let [~(first inst-bind) (provision-all ~conn ~(second inst-bind))
+         ~@(drop 2 inst-bind)]
     (try
      
       ~@body
