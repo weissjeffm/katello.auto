@@ -15,7 +15,7 @@
             [slingshot.slingshot :refer :all]
             [tools.verify :refer [verify-that]]
             [serializable.fn :refer [fn]]
-            [clojure.string :refer [capitalize upper-case lower-case]]
+            [clojure.string :refer [capitalize upper-case lower-case trim]]
             [bugzilla.checker :refer [open-bz-bugs]]
             [deltacloud :as cloud]))
 
@@ -200,11 +200,11 @@
                                    :org @test-org-name
                                    :env env-dev
                                    :force true})
-        (let [system (client/server-hostname)]
-          (verify-that (= env-dev (get-system-env system)))
-          (verify-that (client/does-system-belong-to-an-environment? ssh-conn system env-dev))
-          (edit-system-environment (:name system) {:environment env-test})
-          (verify-that (= env-test (get-system-env system)))
-          (verify-that (client/does-system-belong-to-an-environment? ssh-conn system env-test)))))))
+        (let [client-hostname (-> ssh-conn (client/run-cmd "hostname") :stdout trim)]
+          (verify-that (= env-dev (get-system-env client-hostname)))
+          (verify-that (client/does-system-belong-to-an-environment? ssh-conn client-hostname env-dev))
+          (edit-system-environment (:name client-hostname) {:environment env-test})
+          (verify-that (= env-test (get-system-env client-hostname)))
+          (verify-that (client/does-system-belong-to-an-environment? ssh-conn client-hostname env-test)))))))
         
         
