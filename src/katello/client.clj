@@ -1,7 +1,7 @@
 (ns katello.client
   (:require [katello.conf :refer [config]]
             [slingshot.slingshot :refer [try+ throw+]]
-            [clojure.string :refer [split]])
+            [clojure.string :refer [split trim]])
   (:import [com.redhat.qe.tools SSHCommandRunner]
            [java.io File]))
 
@@ -38,6 +38,10 @@
 
 (defn hostname [runner]
   (-> runner .getConnection .getHostname))
+
+(defn my-hostname "hostname according to the client itself"
+  [runner]
+  (-> runner (run-cmd "hostname") :stdout trim))
 
 (defn server-hostname []
   (-> (@config :server-url) (java.net.URL.) .getHost))

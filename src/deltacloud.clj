@@ -106,7 +106,7 @@ etc), returns an infinite sequence of maps, each one add
       (do
         #_(prn (select-keys i [:name :state :public_addresses :actions]))
         (Thread/sleep 10000)
-          (recur (refresh conn i))))))
+        (recur (refresh conn i))))))
 
 (defn perform-action-wait
   "Performs action on instance i, waits for pred to become true."
@@ -141,35 +141,48 @@ etc), returns an infinite sequence of maps, each one add
 (defn provision
   "Create an instance, start it and wait for it to come up."
   [conn m]
-  (start conn (create-instance conn m)))
+  (assoc (start conn (create-instance conn m))
+    :deltacloud-connection conn))
 
 (defn unprovision "Whatever state the instance is in, destroy it"
-  [conn i]
-  (cond (stopped? i) (destroy conn i)
-        (running? i) (destroy conn (stop conn i))
-        :else (unprovision (wait-for conn i
-                                     (some-fn stopped? running?)))))
+  ([i] (unprovision (:deltacloud-connection i) i))
+  ([conn i]
+     {:pre [conn]}
+     (cond (stopped? i) (destroy conn i)
+           (running? i) (destroy conn (stop conn i))
+           :else (unprovision (wait-for conn i
+                                        (some-fn stopped? running?))))))
 
 (defn provision-all
   "Provision instances with given properties (a list of maps), in parallel.
-   See name-indexed to easily generate such a list."
+   See name-indexed to easily generate such a list. Returns the
+   instances data from deltacloud, and the deltacloud connection."
   [conn instance-props]
-  (->> (for [inst-prop instance-props]
-       (future (provision conn inst-prop)))
-     doall
-     (map deref)))
+  {:instances (->> (for [inst-prop instance-props]
+                   (future (provision conn inst-prop)))
+                 doall
+                 (map deref))
+   :deltacloud-connection conn})
+
+
 
 (defn unprovision-all
   "Destroy all the given instances, in parallel."
-  [conn instances]
-  (map deref
-       (doall (for [i instances]
-                (future (unprovision conn i))))))
+  ([instances] (unprovision-all (:deltacloud-connection instances) (:instances instances)))
+  ([conn instances]
+     (map deref
+          (doall (for [i instances]
+                   (future (unprovision conn i)))))))
 
-(defmacro with-instances [conn inst-bind & body]
-  `(let [~(first inst-bind) (provision-all ~conn ~(second inst-bind))
-         ~@(drop 2 inst-bind)]
-    (try
-     
-      ~@body
-      (finally (unprovision-all ~conn ~(first inst-bind))))))
+(defmacro with-instances "Executes body with bound instances."
+  [instances-binding & body]
+  `(let ~instances-binding
+     (try
+       ~@body
+       (finally (unprovision-all ~(first instances-binding))))))
+
+(defmacro with-instance [instance-binding & body]
+  `(let ~instance-binding
+     (try
+       ~@body
+       (finally (unprovision ~(first instance-binding))))))

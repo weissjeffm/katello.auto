@@ -84,9 +84,14 @@
   []
   (->> (loaded-libs)
      (filter (fn [sym] (-> sym str (.startsWith "katello"))))
+     (concat '(deltacloud katello.client.provision))
      all-fns
      (concat '(tools.verify/check
-               com.redhat.qe.auto.selenium.selenium/call-sel)) ;;extra fns to add
+               com.redhat.qe.auto.selenium.selenium/call-sel
+               clj-http.client/get
+               clj-http.client/put
+               clj-http.client/post
+               clj-http.client/delete)) ;;extra fns to add
      
      (remove #{'katello.notifications/success? ;;fns to remove
                'katello.tasks/uniqueify
@@ -97,7 +102,8 @@
                'katello.tasks/timestamps
                'katello.tasks/date-string
                'katello.tasks/timestamped-seq
-               'katello.conf/client-defs})))
+               'katello.conf/client-defs
+               'deltacloud/name-indexed})))
 
 
 (declare ^:dynamic *session-user*
