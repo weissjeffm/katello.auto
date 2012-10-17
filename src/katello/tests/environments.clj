@@ -10,7 +10,8 @@
                       [client :as client]
                       [systems :refer :all]
                       [conf :as conf]) 
-            [katello.tests.providers :refer [with-n-new-orgs]] 
+            [katello.tests.providers :refer [with-n-new-orgs]]
+            [katello.client.provision :as provision]
             [test.tree.script :refer :all]
             [slingshot.slingshot :refer :all]
             [tools.verify :refer [verify-that]]
@@ -188,23 +189,23 @@
   (deftest "Move systems from one env to another"
     :blockers conf/no-clients-defined
     
-    (cloud/with-instances conf/*cloud-conn*
-        [[inst] (take 1 (conf/client-defs "envmovetest"))
-         ssh-conn (client/new-runner (cloud/ip-address inst))]
-      (with-unique [env-dev  "dev" env-test  "test"]
-        (environment/create env-dev {:org-name @test-org-name})
-        (environment/create env-test {:org-name @test-org-name})
-        (client/setup-client ssh-conn)
-        (client/register ssh-conn {:username conf/*session-user*
-                                   :password conf/*session-password*
-                                   :org @test-org-name
-                                   :env env-dev
-                                   :force true})
-        (let [client-hostname (-> ssh-conn (client/run-cmd "hostname") :stdout trim)]
-          (verify-that (= env-dev (get-system-env client-hostname)))
-          (verify-that (client/does-system-belong-to-an-environment? ssh-conn client-hostname env-dev))
-          (edit-system-environment (:name client-hostname) {:environment env-test})
-          (verify-that (= env-test (get-system-env client-hostname)))
-          (verify-that (client/does-system-belong-to-an-environment? ssh-conn client-hostname env-test)))))))
+    (provision/with-client "envmovetest"
+      inst 
+      (let [ssh-conn (:ssh-connection inst)] 
+       (with-unique [env-dev  "dev" env-test  "test"]
+         (environment/create env-dev {:org-name @test-org-name})
+         (environment/create env-test {:org-name @test-org-name})
+         (client/setup-client ssh-conn)
+         (client/register ssh-conn {:username conf/*session-user*
+                                    :password conf/*session-password*
+                                    :org @test-org-name
+                                    :env env-dev
+                                    :force true})
+         (let [client-hostname (-> ssh-conn (client/run-cmd "hostname") :stdout trim)]
+           (verify-that (= env-dev (get-system-env client-hostname)))
+           (verify-that (client/does-system-belong-to-an-environment? ssh-conn client-hostname env-dev))
+           (edit-system-environment (:name client-hostname) {:environment env-test})
+           (verify-that (= env-test (get-system-env client-hostname)))
+           (verify-that (client/does-system-belong-to-an-environment? ssh-conn client-hostname env-test))))))))
         
         

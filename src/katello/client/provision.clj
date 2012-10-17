@@ -33,17 +33,18 @@
   "Provisions a client with instance name clientname (plus unique
  identifier) and configures it for the katello server under test.
  inst-bind is a symbol to refer to the client in the provided body. It
- will be bound to the data returned from the cloud provider. Executes
- body and then terminates the instances (even if there was an
- exception thrown). sample:
+ will be bound to the data returned from the cloud provider.
+ ssh-conn-bind will be bound to an SSHCommandRunner to run commands on
+ the client. Executes body and then terminates the instances (even if
+ there was an exception thrown). sample:
    (with-client \"myinstname\" client (do-thing client))"
-  [clientname inst-bind & body]
+  [clientname inst-bind ssh-conn-bind & body]
   `(cloud/with-instance
        [~inst-bind (let [inst# (->> (conf/client-defs ~clientname)
                                   first
                                   (cloud/provision conf/*cloud-conn*)
                                   add-ssh)]
-                     (client/setup-client (inst# :ssh-connection))
+                     (client/setup-client (:ssh-connection inst#))
                      inst#)]
-     
-     ~@body))
+     (let [~ssh-conn-bind (:ssh-connection ~inst-bind)]
+       ~@body)))

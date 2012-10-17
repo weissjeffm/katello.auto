@@ -306,8 +306,7 @@
       
       
     (provision/with-client "check-distro"
-        inst
-      (let [ssh-conn (:ssh-connection inst)]
+        inst ssh-conn
         (client/register ssh-conn
                          {:username *session-user*
                           :password *session-password*
@@ -315,7 +314,7 @@
                           :env test-environment
                           :force true})
         (verify-that (= (client/get-distro ssh-conn)
-                        (system/get-os (client/my-hostname ssh-conn)))))))
+                        (system/get-os (client/my-hostname ssh-conn))))))
     
   system-group-tests)
 
