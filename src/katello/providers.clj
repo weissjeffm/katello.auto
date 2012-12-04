@@ -1,8 +1,8 @@
 (ns katello.providers
-  (:require [com.redhat.qe.auto.selenium.selenium :refer [browser]] 
+  (:require [com.redhat.qe.auto.selenium.selenium :refer [browser fill-ajax-form]] 
             (katello [locators :as locators] 
                      [notifications :as notification] 
-                     [ui-tasks :refer [navigate fill-ajax-form in-place-edit]])))
+                     [ui-tasks :refer [navigate in-place-edit]])))
 
 ;;
 ;; Providers

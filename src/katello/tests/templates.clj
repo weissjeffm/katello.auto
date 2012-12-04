@@ -5,7 +5,8 @@
             [test.tree.script :refer :all] 
             [serializable.fn :refer [fn]]
             [bugzilla.checker :refer [open-bz-bugs]]
-            (katello [api-tasks :as api] 
+            (katello [system-templates :as templates]
+                     [api-tasks :as api] 
                      [tasks :refer :all] 
                      [ui-tasks :refer :all] 
                      [conf :refer [*environments*]])))
@@ -44,7 +45,7 @@
   :blockers (open-bz-bugs "765888")
   
   (deftest "Create a system template" 
-    (create-template {:name (reset! test-template-name (uniqueify "template"))
+    (templates/create {:name (reset! test-template-name (uniqueify "template"))
                       :description "my test template"})
 
     (deftest "Add custom content to a system template"

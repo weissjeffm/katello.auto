@@ -81,7 +81,7 @@
                                       :environment (first conf/*environments*)})))
 
 (def create-a-st
-  (fn [] (create-template {:name (uniqueify "blah")})))
+  (fn [] (templates/create {:name (uniqueify "blah")})))
 
 (def create-a-user
   (fn [] (user/create (uniqueify "blah") {:password "password" :email "me@me.com"})))
@@ -93,7 +93,7 @@
                                         :name "orgaccess"}]}]
           :allowed-actions [(access-org (@conf/config :admin-org))]
           :disallowed-actions (conj (navigate-all :systems-tab :sync-status-page
-                                                  :custom-content-providers-tab :system-templates-page
+                                                  :custom-content-providers-tab :templates/page
                                                   :changesets-page )
                                     (fn [] (organization/create (uniqueify "cantdothis")))
                                     create-an-env)])
@@ -109,7 +109,7 @@
                               (fn [] (organization/delete org-name))
                               create-an-env]
             :disallowed-actions (conj (navigate-all :systems-tab :sync-status-page
-                                                    :custom-content-providers-tab :system-templates-page
+                                                    :custom-content-providers-tab :templates/page
                                                     :changesets-page )
                                       (fn [] (providers/create {:name "myprov"}))
                                       (fn [] (api/create-provider "myprov")))]))
@@ -155,7 +155,7 @@
                          :permissions [{:resource-type "System Templates"
                                         :verbs ["Read System Templates"]
                                         :name "stread"}]}]
-          :allowed-actions [(navigate-fn :system-templates-page)]
+          :allowed-actions [(navigate-fn :templates/page)]
           :disallowed-actions (conj (navigate-all :systems-tab :manage-organizations-page
                                                   :custom-content-providers-tab :sync-status-page :changesets-page)
                                     create-a-st
@@ -215,7 +215,7 @@
             :setup (fn [] (api/create-organization org))
             :allowed-actions [(access-org (@conf/config :admin-org))]
             :disallowed-actions (conj (navigate-all :systems-tab :sync-status-page
-                                                    :custom-content-providers-tab :system-templates-page
+                                                    :custom-content-providers-tab :templates/page
                                                     :changesets-page )
                                       (fn [] (organization/switch org))
                                       (fn [] (navigate :named-organization-page {:org-name org})))]))
@@ -226,7 +226,7 @@
                                           :name "orgadmin"}]}]
             :setup (fn [] (api/create-organization org))
             :allowed-actions (conj (navigate-all :systems-tab :sync-status-page
-                                                   :custom-content-repositories-page :system-templates-page
+                                                   :custom-content-repositories-page :templates/page
                                                    :changesets-page )
                                    (access-org org)
                                    (fn [] (environment/create (uniqueify "blah") {:org-name org})))

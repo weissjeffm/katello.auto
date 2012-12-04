@@ -1,10 +1,10 @@
 (ns katello.manifest
   (:require [clojure.java.io :as io]
             [clojure.data.json :as json]
-            [com.redhat.qe.auto.selenium.selenium :refer [browser]]
+            [com.redhat.qe.auto.selenium.selenium :refer [browser fill-ajax-form]]
             (katello [conf :refer [config]]
                      [tasks :refer [tmpfile unique-format]]
-                     [ui-tasks :refer [navigate in-place-edit fill-ajax-form]]
+                     [ui-tasks :refer [navigate in-place-edit]]
                      [notifications :as notification]))
   (:import [java.util.zip ZipEntry ZipFile ZipOutputStream ZipInputStream]
            [java.io ByteArrayInputStream ByteArrayOutputStream]))

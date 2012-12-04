@@ -1,10 +1,10 @@
 (ns katello.environments
-  (:require [com.redhat.qe.auto.selenium.selenium :refer [browser]]
+  (:require [com.redhat.qe.auto.selenium.selenium :refer [browser fill-ajax-form]]
             [slingshot.slingshot :refer [throw+ try+]]
             (katello [locators :as locators] 
                      [tasks :refer [library]] 
                      [notifications :as notification] 
-                     [ui-tasks :refer [navigate fill-ajax-form in-place-edit]])))
+                     [ui-tasks :refer [navigate in-place-edit]])))
 
 ;;
 ;; Environments

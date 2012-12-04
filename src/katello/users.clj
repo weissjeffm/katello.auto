@@ -1,10 +1,10 @@
 (ns katello.users
-  (:require [com.redhat.qe.auto.selenium.selenium :refer [browser]]
+  (:require [com.redhat.qe.auto.selenium.selenium :refer [browser fill-ajax-form]]
             [slingshot.slingshot :refer [throw+ try+]]
             (katello [locators :as locators] 
                      [conf :refer [config *session-user*
                                    *session-password* *session-org*]] 
-                     [ui-tasks :refer [navigate fill-ajax-form in-place-edit]] 
+                     [ui-tasks :refer [navigate in-place-edit]] 
                      [notifications :as notification] 
                      [organizations :as organization])))
 

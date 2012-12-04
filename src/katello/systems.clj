@@ -1,5 +1,5 @@
 (ns katello.systems
-  (:require [com.redhat.qe.auto.selenium.selenium :refer [browser ->browser]]
+  (:require [com.redhat.qe.auto.selenium.selenium :refer [browser ->browser fill-ajax-form]]
             [clojure.string :refer [blank?]]
             (katello [locators :as locators] 
                      [notifications :as notification] 

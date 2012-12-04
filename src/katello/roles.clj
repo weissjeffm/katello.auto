@@ -1,8 +1,8 @@
 (ns katello.roles
-  (:require [com.redhat.qe.auto.selenium.selenium :refer [browser ->browser]]
+  (:require [com.redhat.qe.auto.selenium.selenium :refer [browser ->browser fill-ajax-form]]
             (katello [locators :as locators] 
                      [notifications :as notification] 
-                     [ui-tasks :refer [fill-ajax-form navigate]]))
+                     [ui-tasks :refer [ navigate]]))
     )
 
 ;;

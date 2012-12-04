@@ -1,6 +1,6 @@
 (ns katello.organizations
   (:require [katello.locators :as locators]
-            [com.redhat.qe.auto.selenium.selenium :refer [browser]]
+            [com.redhat.qe.auto.selenium.selenium :refer [browser fill-ajax-form]]
             (katello [ui-tasks :refer :all] 
                      [notifications :as notification]
                      [conf :refer [*session-org* with-org]]))

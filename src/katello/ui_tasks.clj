@@ -1,8 +1,7 @@
 (ns katello.ui-tasks
   (:require [clojure.data.json  :as json]
-            [ui.navigate      :as nav]
             [com.redhat.qe.auto.selenium.selenium
-             :refer [browser ->browser fill-form fill-item]]
+             :refer [browser ->browser fill-ajax-form fill-item]]
             (katello [locators      :as locators]
                      [tasks         :refer :all] 
                      [notifications :as notification] 
@@ -34,24 +33,6 @@
     {:type :serializable.fn/serializable-fn
      :serializable.fn/source `(errtype ~t)}))
 
-(def ^{:doc "Navigates to a named location in the UI. The first
-  argument should be a keyword for the place in the page tree to
-  navigate to. The 2nd optional argument is a mapping of keywords to
-  strings, if any arguments are needed to navigate there.
-  Example: (navigate :named-organization-page {:org-name 'My org'})
-  See also katello.locators/page-tree for all the places that can be
-  navigated to."
-       :arglists '([location-kw & [argmap]])}
-  navigate (nav/nav-fn #'locators/page-tree))
-
-(defn fill-ajax-form
-  "Fills in a web form and clicks the submit button. Only waits for
-   ajax calls to complete. Items should be a map, where the keys are
-   locators for form elements, and values are the values to fill in.
-   Submit should be a locator for the form submit button."
-  [items submit]
-  (fill-form items submit (constantly nil)))
-
 (defn activate-in-place
   "For an in-place edit input, switch it from read-only to editing
    mode. Takes the locator of the input in editing mode as an
@@ -81,6 +62,25 @@
     (doall (take-while identity (for [elem elems]
                                   (try (browser getText elem)
                                        (catch SeleniumException e nil)))))))
+
+
+(defn toggler
+  "Returns a function that returns a locator for the given on/off text
+   and locator strategy. Used for clicking things like +Add/Remove for
+   items in changesets or permission lists."
+  [[on-text off-text] loc-strategy]
+  (fn [associated-text on?]
+    (loc-strategy (if on? on-text off-text) associated-text)))
+
+(def add-remove ["+ Add" "Remove"])
+
+
+
+
+
+(defn toggle "Toggles the item from on to off or vice versa."
+  [a-toggler associated-text on?]
+  (browser click (a-toggler associated-text on?)))
 
 (defn content-search-entity-type-from-attribute [attr-val]
   (let [words (string/split attr-val  #"_")
@@ -388,43 +388,6 @@
   (browser click :add-subscriptions-to-activation-key)
   (notification/check-for-success))
   
-
-(defn create-template
-  "Creates a system template with the given name and optional
-  description."
-  [{:keys [name description]}]
-  (navigate :new-system-template-page)
-  (fill-ajax-form {:template-name-text name
-                   :template-description-text description}
-                  :save-new-template)
-  (notification/check-for-success))
-
-(defn add-to-template
-  "Adds content to a given template.  Example:
-   (add-to-template 'mytemplate' [{:product 'prod3'
-                                   :packages ['rpm1' 'rpm2']}
-                                  {:product 'prod6'
-                                   :repositories ['x86_64']}]"
-  [template content]
-  (navigate :named-system-template-page {:template-name template})
-  (let [add-item (fn [item] (locators/toggle locators/template-toggler item true))]
-    (doseq [group content]
-      (let [category-keyword (-> group (dissoc :product) keys first)
-            category-name (-> category-keyword
-                             name
-                             (.replace "-" " ")
-                             capitalize-all)]
-        (->browser
-         (getEval "window.onbeforeunload = function(){};") ;circumvent popup
-         (sleep 2000)
-         (click (locators/template-product (:product group)))
-         (sleep 2000)
-         (click (locators/template-eligible-category category-name)))
-        (doall (map add-item (group category-keyword)))
-        (browser click :template-eligible-home)))
-    (browser click :save-template)
-    (notification/check-for-success)))
-
 (defn enable-redhat-repositories
   "Enable the given list of repos in the current org."
   [repos]
