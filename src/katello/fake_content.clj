@@ -100,7 +100,7 @@
     (download-original dl-loc)
     (with-org org-name
       (org/switch)
-      (manifest/upload-new-cloned dl-loc {:repository-url (@config :redhat-repo-url)})
+      (subscriptions/upload-new-cloned-manifest dl-loc {:repository-url (@config :redhat-repo-url)})
       (when (api/is-katello?)
         (repo/enable-redhat repos)
         (sync/perform-sync repos)))))
