@@ -27,8 +27,12 @@
                ::active                "//*[@id='switcherButton']"
                ::default               "//div[@id='orgbox']//input[@checked='checked' and @class='default_org']/../"})
 
-(defmethod ui/locator *ns* [k] (k (merge ui/locators locators)))
+(defmethod ui/locator *ns* [k] (k locators))
+
 ;; Nav
+
+(defmethod nav/page-tree *ns* [k]
+  (nav/add-subnavigation (nav/page-tree )))
 
 (nav/add-subnavigation
  ::page 
