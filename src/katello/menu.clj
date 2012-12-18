@@ -3,44 +3,46 @@
             (katello [ui :as ui]
                      [navigation :as nav])))
 
-;; Locators
-(def locators
-  {::activation-keys-link             (ui/menu-link "activation_keys")
-   ::administer-link                  (ui/menu-link "admin")
-   ::by-environments-link             (ui/menu-link "env")
-   ::changeset-history-link           (ui/menu-link "changeset")
-   ::changeset-management-link        (ui/menu-link "changeset_management")
-   ::changesets-link                  (ui/menu-link "changesets")
-   ::content-link                     (ui/menu-link "content")
-   ::content-search-link              (ui/menu-link "content_search")
-   ::custom-content-repositories-link (ui/menu-link "custom_providers")
-   ::dashboard-link                   (ui/menu-link "dashboard")
-   ::gpg-keys-link                    (ui/menu-link "gpg")
-   ::import-history-link              (ui/menu-link "import_history")
-   ::manage-organizations-link        (ui/menu-link "orgs")
-   ::package-filters-link             (ui/menu-link "filters")
-   ::red-hat-repositories-link        (ui/menu-link "redhat_providers")
-   ::red-hat-subscriptions-link       (ui/menu-link "red_hat_subscriptions")
-   ::repositories-link                (ui/menu-link "providers")
-   ::roles-link                       (ui/menu-link "roles")
-   ::subscriptions-link               (ui/menu-link "subscriptions")
-   ::sync-management-link             (ui/menu-link "sync_mgmt")
-   ::sync-plans-link                  (ui/menu-link "sync_plans")
-   ::sync-schedule-link               (ui/menu-link "sync_schedule")
-   ::sync-status-link                 (ui/menu-link "sync_status")
-   ::system-groups-link               (ui/menu-link "system_groups")
-   ::system-templates-link            (ui/menu-link "system_templates")
-   ::systems-all-link                 (ui/menu-link "registered")
-   ::systems-link                     (ui/menu-link "systems")
-   ::users-link                       (ui/menu-link "users")})
+(defn fmap "Passes all values of m through f." [f m]
+  (into {} (for [[k v] m] [k (f v)])))
 
-(defmethod ui/locator *ns* [k] (k locators))
+;; Locators
+
+(ui/deflocators
+  (fmap ui/menu-link {::activation-keys-link             "activation_keys"
+                      ::administer-link                  "admin"
+                      ::by-environments-link             "env"
+                      ::changeset-history-link           "changeset"
+                      ::changeset-management-link        "changeset_management"
+                      ::changesets-link                  "changesets"
+                      ::content-link                     "content"
+                      ::content-search-link              "content_search"
+                      ::custom-content-repositories-link "custom_providers"
+                      ::dashboard-link                   "dashboard"
+                      ::gpg-keys-link                    "gpg"
+                      ::import-history-link              "import_history"
+                      ::manage-organizations-link        "orgs"
+                      ::package-filters-link             "filters"
+                      ::red-hat-repositories-link        "redhat_providers"
+                      ::red-hat-subscriptions-link       "red_hat_subscriptions"
+                      ::repositories-link                "providers"
+                      ::roles-link                       "roles"
+                      ::subscriptions-link               "subscriptions"
+                      ::sync-management-link             "sync_mgmt"
+                      ::sync-plans-link                  "sync_plans"
+                      ::sync-schedule-link               "sync_schedule"
+                      ::sync-status-link                 "sync_status"
+                      ::system-groups-link               "system_groups"
+                      ::system-templates-link            "system_templates"
+                      ::systems-all-link                 "registered"
+                      ::systems-link                     "systems"
+                      ::users-link                       "users"}))
 
 ;; Nav
 
-(defn pages []
-  (nav/add-subnavigation (nav/pages) ::nav/top-level
-   
+(nav/defpages (nav/pages)
+  [::nav/top-level
+               
    [::systems-menu [] (browser mouseOver ::systems-link)
     [:katello.systems/page [] (browser clickAndWait ::systems-all-link)]
     [:katello.systems/by-environments-page [] (browser clickAndWait ::by-environments-link)]
@@ -63,7 +65,7 @@
      [:katello.sync-management/schedule-page [] (browser clickAndWait ::sync-schedule-link)]]
 
     [:katello.content-search/page [] (browser clickAndWait ::content-search-link)]
-    
+                
     [:katello.system-templates/page [] (browser clickAndWait ::system-templates-link)]
 
     [::changeset-management-menu [] (browser mouseOver ::changeset-management-link)
@@ -73,8 +75,4 @@
    [::administer-menu [] (browser mouseOver ::administer-link)
     [:katello.users/page [] (browser clickAndWait ::users-link)]
     [:katello.roles/page [] (browser clickAndWait ::roles-link)]
-    [:katello.organizations/page [] (browser clickAndWait ::manage-organizations-link)]]))
-
-(defmethod nav/page-tree *ns* [k] (pages))
-
-nil ;; don't want to see huge value above when ns is eval'd
+    [:katello.organizations/page [] (browser clickAndWait ::manage-organizations-link)]]])

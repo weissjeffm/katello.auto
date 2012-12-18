@@ -14,36 +14,31 @@
  {default-star "//div[@id='orgbox']//a[.='%s']/../span[starts-with(@id,'favorite')]"
   switcher-link     "//div[@id='orgbox']//a[.='%s']"})
 
-(def locators {::new                   "//a[@id='new']"
-               ::create                "organization_submit"
-               ::name-text             "organization[name]"
-               ::description-text      "organization[description]"
-               ::environments          (ui/link "Environments")
-               ::edit                  (ui/link "Edit")
-               ::remove                (ui/link "Remove Organization")
-               ::initial-env-name-text "environment[name]"
-               ::initial-env-desc-text "environment[description]"
-               ::switcher              "switcherButton"
-               ::manage-switcher-link  "manage_orgs"
-               ::active                "//*[@id='switcherButton']"
-               ::default               "//div[@id='orgbox']//input[@checked='checked' and @class='default_org']/../"})
-
-(defmethod ui/locator *ns* [k] (k locators))
+(ui/deflocators {::new                   "//a[@id='new']"
+                 ::create                "organization_submit"
+                 ::name-text             "organization[name]"
+                 ::description-text      "organization[description]"
+                 ::environments          (ui/link "Environments")
+                 ::edit                  (ui/link "Edit")
+                 ::remove                (ui/link "Remove Organization")
+                 ::initial-env-name-text "environment[name]"
+                 ::initial-env-desc-text "environment[description]"
+                 ::switcher              "switcherButton"
+                 ::manage-switcher-link  "manage_orgs"
+                 ::active                "//*[@id='switcherButton']"
+                 ::default               "//div[@id='orgbox']//input[@checked='checked' and @class='default_org']/../"})
 
 ;; Nav
 
-(defn pages []
-  (reduce navlib/add-subnav-multiple
-          (common/pages)
-          `((::page 
-             (~(nav-tree [::new-page [] (browser click ::new)])
-              ~(nav-tree [::named-page [org-name] (nav/choose-left-pane  org-name)])))
-            (::nav/top-level
-             (~(nav-tree [::page-via-org-switcher [] (browser click ::switcher)
-                          [::link-via-org-switcher [] (browser clickAndWait ::manage-switcher-link)
-                           [::new-page-via-org-switcher [] (browser click ::new)]]]))))))
+(nav/defpages (common/pages)
+  [::page 
+   [::new-page [] (browser click ::new)]
+   [::named-page [org-name] (nav/choose-left-pane  org-name)]]
+  [::nav/top-level
+   [::page-via-org-switcher [] (browser click ::switcher)
+    [::link-via-org-switcher [] (browser clickAndWait ::manage-switcher-link)
+     [::new-page-via-org-switcher [] (browser click ::new)]]]])
 
-(defmethod nav/page-tree *ns* [k] (pages))
 
 ;; Tasks
 

@@ -15,9 +15,8 @@
            [java.text SimpleDateFormat]))
 
 ;; Nav
-(def pages #'menu/pages)
-(defmethod nav/page-tree *ns* [k]
-  (pages))
+
+(def pages #'menu/pages) ; alias 
 
 ;; Nav fns
 

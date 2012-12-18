@@ -66,5 +66,20 @@
                                         (list ~@(for [branch branches]
                                                   `(nav/nav-tree ~branch))))))
 
+(defmacro defpages
+  "Define the pages needed to navigate to in this namespace, and
+   dependent namespaces.  basenav is the page tree you want to graft
+   onto, branches is a list of branches you want to graft.  branch
+   should be formatted as [parent-graft-point child1 child2 ...]"
+   [basenav & branches]
+  `(do (defn ~'pages []
+         (reduce nav/add-subnav-multiple
+                 ~basenav
+                 (list ~@(for [[parent-graft-point# & children#] branches]
+                           `(list ~parent-graft-point#
+                                  (list ~@(for [child# children#]
+                                            `(nav/nav-tree ~child#))))))))
+       (defmethod page-tree *ns* [k#] (pages))))
+
 (defn go-to [location-kw & [argmap]]
   (nav/navigate location-kw (-> location-kw page-tree nav/page-zip) argmap )) 

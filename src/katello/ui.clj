@@ -17,7 +17,26 @@
   textbox              "xpath=//*[self::input[(@type='text' or @type='password' or @type='file') and @name='%s'] or self::textarea[@name='%<s']]"})
 
 
-(def locators
+
+
+;;
+;; Tells the clojure selenium client where to look up keywords to get
+;; real selenium locators.
+;;
+
+(defmulti locator (comp find-ns symbol namespace))
+
+(defmacro deflocators
+  "Define locators needed in this namespace and its dependent namespaces.
+   m is a map of locators.  Optionally, provide other maps containing
+   locators needed in this namespace, for m to be merged with.
+     Example, (deflocators {:foo 'bar'} other.ns/locators)"
+  [m & others]
+  `(do (def ~'locators ~m)
+       (defmethod locator *ns* [k#]
+         (k# (merge ~@others ~'locators)))))
+
+(deflocators
   {::save-inplace-edit       "//div[contains(@class, 'editable')]//button[@type='submit']"
    ::confirmation-dialog     "//div[contains(@class, 'confirmation')]"
 
@@ -31,14 +50,6 @@
    ::search-submit           "//button[@form='search_form']"
    ::expand-path             "path-collapsed"
    ::log-out                 "//div[@id='widget-container']//a[contains(@href,'logout')]"})
-
-;;
-;; Tells the clojure selenium client where to look up keywords to get
-;; real selenium locators.
-;;
-
-(defmulti locator (comp find-ns symbol namespace))
-(defmethod locator *ns* [k] (k locators))
 
 (extend-protocol sel/SeleniumLocatable
   clojure.lang.Keyword
