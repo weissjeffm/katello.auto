@@ -9,11 +9,10 @@
 
 ;; Locators
 
-(def locators {::username-text     "username"
-               ::password-text     "password"
-               ::log-in            "//input[@value='Log In' or @value='Login']"})
-
-(defmethod ui/locator *ns* [k] (k (merge ui/locators locators)))
+(ui/deflocators {::username-text     "username"
+                 ::password-text     "password"
+                 ::log-in            "//input[@value='Log In' or @value='Login']"}
+  ui/locators)
 
 (defn logged-in?
   "Returns true if the browser is currently showing a page where a
