@@ -1,5 +1,6 @@
 (ns katello.organizations
-  (:require [com.redhat.qe.auto.selenium.selenium :as sel :refer [browser]] 
+  (:require [com.redhat.qe.auto.selenium.selenium :as sel :refer [browser]]
+            [ui.navigate :as navlib :refer [nav-tree]]
             (katello [navigation :as nav]
                      [ui :as ui]
                      [ui-common :as common]
@@ -31,19 +32,18 @@
 
 ;; Nav
 
-(defmethod nav/page-tree *ns* [k]
-  (nav/add-subnavigation (nav/page-tree )))
+(defn pages []
+  (reduce navlib/add-subnav-multiple
+          (common/pages)
+          `((::page 
+             (~(nav-tree [::new-page [] (browser click ::new)])
+              ~(nav-tree [::named-page [org-name] (nav/choose-left-pane  org-name)])))
+            (::nav/top-level
+             (~(nav-tree [::page-via-org-switcher [] (browser click ::switcher)
+                          [::link-via-org-switcher [] (browser clickAndWait ::manage-switcher-link)
+                           [::new-page-via-org-switcher [] (browser click ::new)]]]))))))
 
-(nav/add-subnavigation
- ::page 
- [::new-page [] (browser click ::new)]
- [::named-page [org-name] (nav/choose-left-pane  org-name)])
-
-(nav/add-subnavigation
- ::nav/top-level
- [::page-via-org-switcher [] (browser click ::switcher)
-  [::link-via-org-switcher [] (browser clickAndWait ::manage-switcher-link)
-   [::new-page-via-org-switcher [] (browser click ::new)]]])
+(defmethod nav/page-tree *ns* [k] (pages))
 
 ;; Tasks
 

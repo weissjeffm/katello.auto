@@ -38,8 +38,8 @@
 
 ;; Nav
 
-(defmethod nav/page-tree *ns* [k] 
-  (nav/add-subnavigation nav/pages ::nav/top-level
+(defn pages []
+  (nav/add-subnavigation (nav/pages) ::nav/top-level
    
    [::systems-menu [] (browser mouseOver ::systems-link)
     [:katello.systems/page [] (browser clickAndWait ::systems-all-link)]
@@ -74,5 +74,7 @@
     [:katello.users/page [] (browser clickAndWait ::users-link)]
     [:katello.roles/page [] (browser clickAndWait ::roles-link)]
     [:katello.organizations/page [] (browser clickAndWait ::manage-organizations-link)]]))
+
+(defmethod nav/page-tree *ns* [k] (pages))
 
 nil ;; don't want to see huge value above when ns is eval'd

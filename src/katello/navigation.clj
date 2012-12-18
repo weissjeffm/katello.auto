@@ -43,40 +43,28 @@
               (do (search-here item)
                   (browser click loc)))))))
 
-(def
-  ^{:doc "The navigation layout of the UI. Each item in the tree is
+(defn pages []
+  "The navigation layout of the UI. Each item in the tree is
   a new page or tab, that you can drill down into from its parent
   item. Each item contains a keyword to refer to the location in the
   UI, a list of any arguments needed to navigate there (for example,
   to navigate to a provider details page, you need the name of the
   provider). Finally some code to navigate to the location from its
-  parent location. Other namespaces can add their structure here."}
-  pages
+  parent location. Other namespaces can add their structure here."
   (nav/nav-tree
    [::top-level [] (if (or (not (browser isElementPresent ::ui/log-out))
                            (browser isElementPresent ::ui/confirmation-dialog))
                      (browser open (@conf/config :server-url)))]))
 
-(comment (def ^{:doc "Navigates to a named location in the UI. The first
-             argument should be a keyword for the place in the page
-             tree to navigate to. The 2nd optional argument is a
-             mapping of keywords to strings, if any arguments are
-             needed to navigate there.
-             Example: (nav/go-to :katello.organizations/named-page
-             {:org-name 'My org'}) See also page-tree for all the
-             places that can be navigated to."
-        :arglists '([location-kw & [argmap]])}
-           go-to (nav/nav-fn page-tree)))
-
 (defmulti page-tree (comp find-ns symbol namespace))
 
-(defmethod page-tree *ns* [page] pages)
+(defmethod page-tree *ns* [page] (pages))
 
 (defmacro add-subnavigation
   [tree parent-graft-point & branches]
-  `(nav/add-subnav-multiple ~tree ~parent-graft-point
-          (list ~@(for [branch branches]
-                    `(nav/nav-tree ~branch)))))
+  `(nav/add-subnav-multiple ~tree (list ~parent-graft-point
+                                        (list ~@(for [branch branches]
+                                                  `(nav/nav-tree ~branch))))))
 
 (defn go-to [location-kw & [argmap]]
   (nav/navigate location-kw (-> location-kw page-tree nav/page-zip) argmap )) 
