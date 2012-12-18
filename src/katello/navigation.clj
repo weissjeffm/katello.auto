@@ -79,7 +79,7 @@
                            `(list ~parent-graft-point#
                                   (list ~@(for [child# children#]
                                             `(nav/nav-tree ~child#))))))))
-       (defmethod page-tree *ns* [k#] (pages))))
+       (defmethod page-tree *ns* [k#] (~'pages))))
 
 (defn go-to [location-kw & [argmap]]
   (nav/navigate location-kw (-> location-kw page-tree nav/page-zip) argmap )) 

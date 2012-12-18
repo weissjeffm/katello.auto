@@ -11,8 +11,8 @@
 ;; Locators
 
 (sel/template-fns
- {default-star "//div[@id='orgbox']//a[.='%s']/../span[starts-with(@id,'favorite')]"
-  switcher-link     "//div[@id='orgbox']//a[.='%s']"})
+ {default-star  "//div[@id='orgbox']//a[.='%s']/../span[starts-with(@id,'favorite')]"
+  switcher-link "//div[@id='orgbox']//a[.='%s']"})
 
 (ui/deflocators {::new                   "//a[@id='new']"
                  ::create                "organization_submit"
