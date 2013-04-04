@@ -18,7 +18,7 @@
              refer to this type of error, and the values are regexes
              that match the error notification message in the UI."}
   validation-errors
-  (let [errors {::name-taken-error                    #"(Username|Name) has already been taken"
+  (let [errors {::name-taken-error                    #"(Username|Name|Label) has already been taken"
                 ::label-taken-error                   #"Label already exists"
                 ::sg-name-taken-error                 #"Name must be unique within one organization"
                 ::name-no-leading-trailing-whitespace #"Name must not contain leading or trailing white space"

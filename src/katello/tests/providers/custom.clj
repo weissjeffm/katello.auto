@@ -5,6 +5,7 @@
                      [repositories :as repo]
                      [tasks :refer :all]
                      [organizations :as organization]
+                     [validation :as val]
                      [conf :as conf])
             [test.tree.script :refer [defgroup deftest]]
             [bugzilla.checker :refer [open-bz-bugs]]
@@ -81,7 +82,28 @@
                          (take 2))]
           (create-recursive (update-in product [:provider :org] (constantly org))))))
 
+    (deftest "Repository Autodiscovery for existing product"
+      :description "Uses the repo autodiscovery tool to create custom repositories within a new custom product."
+      (with-unique [org (katello/newOrganization {:name "org"})
+                    provider (katello/newProvider {:name "prov"
+                                                   :org org})
+                    product (katello/newProduct {:name "prod"
+                                                 :provider provider})]
+        (doseq [ent (list org provider product)]
+          (ui/create ent))
+        (provider/create-discovered-repos-within-product provider product "http://inecas.fedorapeople.org/fakerepos/"  ["/brew-repo/" "/cds/content/nature/1.0/i386/rpms/"])))
 
+    (deftest "Add the same autodiscovered repo to a product twice"
+      :description "Adds the repositories to the selected product twice."
+      (with-unique [org (katello/newOrganization {:name "org"})
+                    provider (katello/newProvider {:name "prov"
+                                                   :org org})
+                    product (katello/newProduct {:name "prod"
+                                                 :provider provider})]
+        (doseq [ent (list org provider product)]
+          (ui/create ent))
+        (val/expecting-error-2nd-try (katello.ui-common/errtype :katello.notifications/name-taken-error) (provider/create-discovered-repos-within-product provider product "http://inecas.fedorapeople.org/fakerepos/"  ["/brew-repo/" "/cds/content/nature/1.0/i386/rpms/"]))))
+    
     (deftest "Create two products with same name in same org different provider"
       :description "Creates products with the same name in different
                     providers, where the providers are in the same
