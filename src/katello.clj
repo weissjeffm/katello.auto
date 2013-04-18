@@ -5,29 +5,29 @@
 
 (defmacro defrecord [rec types]
   (let [args (vec (map first (partition 3 types)))]
-    `(do (clojure.core/defrecord ~rec ~args
-           clojure.lang.IFn
-           (invoke [this#] this#)
-           (invoke [this# query#] (get this# query#))
-           (applyTo [this# args#] (tc-ignore (get-in this# args#))))
+    `(do (tc-ignore (clojure.core/defrecord ~rec ~args
+                      clojure.lang.IFn
+                      (invoke [this#] this#)
+                      (invoke [this# query#] (get this# query#))
+                      (applyTo [this# args#] (get-in this# args#))))
          (ann-record ~rec ~types)
          (tc-ignore (def ~(symbol (str "new" rec)) ~(symbol (str "map->" rec)) )))))
 
-(def-alias Str (U String, nil))
+(def-alias Str (U (Option String), nil))
 
 ;; Define records for all entities we'll be testing with
-(defrecord Organization [id :- (U String, Number, nil)
-                         name :- (U String, nil)
-                         label :- String,
-                         description :- String,
-                         initial-env :- Environment])
+(defrecord Organization [id :- (Option (U String, Number))
+                         name :- (Option String)
+                         label :- (Option String),
+                         description :- (Option String),
+                         initial-env :- (Option Environment)])
 
-(defrecord Environment [id :- Any,
-                        name :- String,
-                        label :- String,
-                        description :- String,
-                        org :- Organization,
-                        prior :- Environment])
+(defrecord Environment [id :- (Option (U String, Number))
+                        name :- (Option String),
+                        label :- (Option String),
+                        description :- (Option String),
+                        org :- (Option Organization,)
+                        prior :- (Option Environment)])
 
 (ann library Environment)
 (def library (map->Environment {:name "Library"})) ;  Library is a special
@@ -38,18 +38,20 @@
   "Creates a library record for a particular org and next
    environment (used for env selection in UI)"
   [env]
-  (assoc library :org (:org env) :next env))
+  (tc-ignore (assoc library :org (:org env) :next env)))
 
 (defrecord Provider [id :- Any,
-                     name :- String,
-                     description :- String,
+                     name :- (Option String)
+                     description :- (Option String),
                      org :- Organization,])
 
 (defrecord Product [id :- Any,
-                    name :- String,
+                    name :- (Option String),
                     provider :- Provider,
-                    description :- String,
+                    description :- (Option String),
                     gpg-key :- GPGKey])
+
+(defrecord GPGKey [id :- Any, name :- (Option String)])
 
 (comment (defrecord Product [id name provider description gpg-key])
 
