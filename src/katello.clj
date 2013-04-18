@@ -12,7 +12,9 @@
            (applyTo [this# args#] (tc-ignore (get-in this# args#))))
          (ann-record ~rec ~types)
          (tc-ignore (def ~(symbol (str "new" rec)) ~(symbol (str "map->" rec)) )))))
-(def str-type (U String, nil))
+
+(def-alias Str (U String, nil))
+
 ;; Define records for all entities we'll be testing with
 (defrecord Organization [id :- (U String, Number, nil)
                          name :- (U String, nil)
@@ -38,100 +40,100 @@
   [env]
   (assoc library :org (:org env) :next env))
 
-(ann-record Provider [id :- Any,
-                      name :- String,
-                      description :- String,
-                      org :- Organization,])
-(defrecord Provider [id name description org])
-
-(ann-record Product [id :- Any,
+(defrecord Provider [id :- Any,
                      name :- String,
-                     provider :- Provider,
                      description :- String,
-                     gpg-key :- GPGKey])
-(defrecord Product [id name provider description gpg-key])
+                     org :- Organization,])
 
-(defrecord Repository [id name product url gpg-key])
+(defrecord Product [id :- Any,
+                    name :- String,
+                    provider :- Provider,
+                    description :- String,
+                    gpg-key :- GPGKey])
 
-(defrecord Changeset [id name env deletion?])
+(comment (defrecord Product [id name provider description gpg-key])
 
-(ns-unmap *ns* 'Package) ; collision w java.lang.Package
-(defrecord Package [id name product])
+         (defrecord Repository [id name product url gpg-key])
 
-(defrecord Erratum [id name product])
+         (defrecord Changeset [id name env deletion?])
 
-(defrecord Template [id name product org content])
+         (ns-unmap *ns* 'Package)      ; collision w java.lang.Package
+         (defrecord Package [id name product])
 
-(ns-unmap *ns* 'System) ; collision w java.lang.System
-(defrecord System [id name env service-level])
+         (defrecord Erratum [id name product])
 
-(defrecord GPGKey [id name org content])
+         (defrecord Template [id name product org content])
 
-(defrecord User [id name email password password-confirm default-org default-env])
+         (ns-unmap *ns* 'System)        ; collision w java.lang.System
+         (defrecord System [id name env service-level])
 
-(defrecord Role [id name users permissions])
+         (defrecord GPGKey [id name org content])
 
-(defrecord Permission [name role org resource-type verbs])
+         (defrecord User [id name email password password-confirm default-org default-env])
 
-(defrecord ActivationKey [id name env description])
+         (defrecord Role [id name users permissions])
 
-(defrecord SystemGroup [id name systems  org])
+         (defrecord Permission [name role org resource-type verbs])
 
-(defrecord ContentView [id name description composite composite-name org])
+         (defrecord ActivationKey [id name env description])
 
-(defrecord Manifest [provider file-path url])
+         (defrecord SystemGroup [id name systems  org])
 
-(def red-hat-provider (newProvider {:name "Red Hat"}))
+         (defrecord ContentView [id name description composite composite-name org])
 
-(defrecord SyncPlan [id name org interval])
+         (defrecord Manifest [provider file-path url])
 
-(defrecord Pool [id productId org])
+         (def red-hat-provider (newProvider {:name "Red Hat"}))
 
-(defrecord Subscription [id system pool quantity])
+         (defrecord SyncPlan [id name org interval])
 
-;; Relationship protocol
+         (defrecord Pool [id productId org])
 
-(defprotocol BelongsTo
-  (org [x])
-  (env [x])
-  (product [x])
-  (provider [x])
-  (repository [x])
-  (parent [x]))
+         (defrecord Subscription [id system pool quantity])
 
-(def relationships
-  {Organization {:org identity, :parent (constantly nil)}
-   Environment {:org :org, :env identity, :parent #'org}  ; the org is in the env's :org field
-   Provider {:org :org, :provider identity, :parent #'org}
-   Product {:org (comp #'org #'provider), :provider :provider, :product identity, :parent #'provider} ; the org is the provider's org
-   Repository {:org (comp #'org #'product), :product :product, :provider (comp #'provider #'product)
-               :repository identity, :parent #'product} ; the org is the product's org
-   Package {:org (comp #'org #'product), :product :product, :parent #'product}
-   Erratum {:org (comp #'org #'product), :product :product, :parent #'product}
-   Template {:org (fn [t] (or (:org t)
-                              (-> t product org)))
-             :product :product}
-   System {:org (comp #'org #'env), :env :env, :parent #'org}
-   GPGKey {:org :org, :parent #'org}
-   Permission {:org :org, :parent #'org}
-   ActivationKey {:org (comp #'org #'env), :env :env, :parent #'env}
-   SystemGroup {:org :org}
-   ContentView {:org :org, :parent #'org}
-   Manifest {:org (comp #'org #'provider), :provider :provider, :parent #'provider}
-   SyncPlan {:org :org, :parent #'org}})
+         ;; Relationship protocol
 
-(doseq [[rec impls] relationships]
-  (extend rec BelongsTo impls))
+         (defprotocol BelongsTo
+           (org [x])
+           (env [x])
+           (product [x])
+           (provider [x])
+           (repository [x])
+           (parent [x]))
+
+         (def relationships
+           {Organization {:org identity, :parent (constantly nil)}
+            Environment {:org :org, :env identity, :parent #'org} ; the org is in the env's :org field
+            Provider {:org :org, :provider identity, :parent #'org}
+            Product {:org (comp #'org #'provider), :provider :provider, :product identity, :parent #'provider} ; the org is the provider's org
+            Repository {:org (comp #'org #'product), :product :product, :provider (comp #'provider #'product)
+                        :repository identity, :parent #'product} ; the org is the product's org
+            Package {:org (comp #'org #'product), :product :product, :parent #'product}
+            Erratum {:org (comp #'org #'product), :product :product, :parent #'product}
+            Template {:org (fn [t] (or (:org t)
+                                       (-> t product org)))
+                      :product :product}
+            System {:org (comp #'org #'env), :env :env, :parent #'org}
+            GPGKey {:org :org, :parent #'org}
+            Permission {:org :org, :parent #'org}
+            ActivationKey {:org (comp #'org #'env), :env :env, :parent #'env}
+            SystemGroup {:org :org}
+            ContentView {:org :org, :parent #'org}
+            Manifest {:org (comp #'org #'provider), :provider :provider, :parent #'provider}
+            SyncPlan {:org :org, :parent #'org}})
+
+         (doseq [[rec impls] relationships]
+           (extend rec BelongsTo impls))
 
 
 
-(defn chain
-  "Sets the next and prior fields of successive envs to make a doubly
+         (defn chain
+           "Sets the next and prior fields of successive envs to make a doubly
   linked list."
-  [environments] {:pre [(apply = (map org environments))]} ; all in same org
-  (let [org (-> environments first org)
-        f (fn [envs latest-env]
-            (let [l (last envs)
-                  r (butlast envs)]
-              (conj (vec r) (assoc l :next latest-env) (assoc latest-env :prior l))))]
-    (rest (reduce f (vector (assoc library :org org)) (vec environments)))))
+           [environments] {:pre [(apply = (map org environments))]} ; all in same org
+           (let [org (-> environments first org)
+                 f (fn [envs latest-env]
+                     (let [l (last envs)
+                           r (butlast envs)]
+                       (conj (vec r) (assoc l :next latest-env) (assoc latest-env :prior l))))]
+             (rest (reduce f (vector (assoc library :org org)) (vec environments))))))
