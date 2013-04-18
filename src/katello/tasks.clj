@@ -1,6 +1,8 @@
 (ns katello.tasks
-  (:require [slingshot.slingshot :refer :all] 
-            [clojure.string :refer [split join capitalize]])
+  (:use clojure.core.typed)
+  (:require
+   [slingshot.slingshot :refer :all] 
+   [clojure.string :refer [split join capitalize]])
   (:import java.util.Date))
 
 (defmacro ^{:see-also "https://github.com/scgilardi/slingshot"}
@@ -22,9 +24,10 @@
          (throw+ {:type :success :expected ~selector})
          (catch ~selector e# nil)))
 
+
 (def date-format (java.text.SimpleDateFormat. "MMdd-HHmmss-SSS"))
  
-
+(ann timestamps [ -> (Seqable Number)])
 (defn timestamps []
   "Returns an infinite lazy sequence of timestamps in ms, starting
   with the current time, incrementing the time by one on each

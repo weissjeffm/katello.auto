@@ -1,11 +1,13 @@
 (defproject katello.auto "1.0.0-SNAPSHOT"
   :description "Katello automation"  
   :main ^{:skip-aot true} katello.tests.suite
-  :dependencies [[org.clojure/clojure "1.5.0"]
+  :dependencies [[org.clojure/clojure "1.5.1"]
                  [org.clojure/tools.macro "0.1.2"]
                  [org.clojure/tools.cli "0.2.1"]
                  [org.clojure/data.json "0.1.1"]
                  [org.clojure/data.zip "0.1.1"]
+
+                 [org.clojure/core.typed "0.1.14-20130416.043541-10"]
                  
                  [org.seleniumhq.selenium/selenium-server "2.29.1"]
                  [org.seleniumhq.selenium/selenium-java "2.29.1"]
@@ -33,4 +35,5 @@
   :repositories ^:replace [["clojars" {:url "http://clojars.org/repo"
                                        :snapshots {:update :always}}]
                            ["central" {:url "http://repo1.maven.org/maven2"
-                                       :snapshots false}]])
+                                       :snapshots false}]
+                           ["sonatype-oss-public" "https://oss.sonatype.org/content/groups/public/"]])
