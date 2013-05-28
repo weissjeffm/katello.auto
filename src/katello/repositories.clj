@@ -11,7 +11,7 @@
 
 ;; Locators
 
-(ui/deflocators
+(ui/defelements :katello.deployment/any
   {::repo-name-text         "repo[name]"
    ::repo-label-text        "repo[label]"
    ::repo-url-text          "repo[feed]"
@@ -34,7 +34,7 @@
   gpgkey-under-repo-details "//div[@name='gpg_key' and contains(.,'%s')]"
   select-repo "//li[@class='repo']//div[contains(@class,'grid') and contains(.,'%s')]"})
 
-(nav/defpages (provider/pages)
+(nav/defpages pages :katello.deployment/any (provider/pages)
   [::provider/products-page 
    [::named-page (fn [repo] (browser click (ui/editable (:name repo))))]])
 

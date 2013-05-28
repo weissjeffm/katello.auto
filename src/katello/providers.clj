@@ -12,7 +12,7 @@
 
 ;; Locators
 
-(ui/deflocators
+(ui/defelements :katello.deployment/any
        {::new                       "new"
         ::name-text                 "provider[name]"
         ::provider-description-text "provider[description]"
@@ -52,7 +52,7 @@
 
 ;; Nav
 
-(nav/defpages (common/pages)
+(nav/defpages pages :katello.deployment/any katello.menu
   [::custom-page
    [::new-page (nav/browser-fn (click ::new))]
    [::named-page (fn [ent] (nav/choose-left-pane (kt/provider ent)))

@@ -9,7 +9,7 @@
                      [ui :as ui])))
 ;; Nav
 
-(nav/defpages (common/pages)
+(nav/defpages katello.menu
   [::page])
 
 (defn page-content []

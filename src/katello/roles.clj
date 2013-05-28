@@ -11,7 +11,7 @@
 
 ;; Locators
 
-(ui/deflocators
+(ui/defelements :katello.deployment/any
   {::new                             "//a[@id='new']"
    ::name-text                       "role[name]"
    ::description-text                "role[description]"
@@ -40,7 +40,7 @@
 
 ;; Nav
 
-(nav/defpages (common/pages)
+(nav/defpages pages :katello.deployment/any katello.menu
   [::page
    [::named-page (fn [role] (nav/choose-left-pane role))
     [::named-users-page (nav/browser-fn (click ::users))]
