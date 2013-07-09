@@ -1,7 +1,44 @@
 (ns katello.client.provision
-  (:require [deltacloud :as cloud]           
+  (:require [deltacloud :as cloud]
+            [slingshot.slingshot :refer [throw+]]
             (katello [client :as client]
-                     [conf :as conf])))
+                     [conf :as conf]))
+  (:import [java.util.concurrent ArrayBlockingQueue TimeUnit]))
+
+(defrecord ProvisionQueue [queue shutdown?])
+
+(def queue (atom nil))
+
+(defn new-queue [capacity]
+  (ProvisionQueue. (ArrayBlockingQueue. capacity) nil))
+
+(defn- clean-up-queue [q]
+  (let [leftovers (java.util.ArrayList.)]
+    (-> q (.drainTo leftovers))
+    (doseq [p leftovers]
+      (send @p cloud/unprovision))
+    (when-not (apply await-for 600000 leftovers)
+      (throw+ {:type ::cleanup-timeout
+               ::leftover-instance-agents leftovers}))))
+
+(defn fill-queue
+  [pqa]
+  (let [provision #(cloud/provision conf/*cloud-conn* %)]
+    (loop [defs (conf/client-defs "pre-provision")]
+      (let [d (first defs)
+            p (promise)]
+        (println p)
+        (while (not (or (:shutdown? @pqa)
+                        (.offer (:queue @pqa) p 5 TimeUnit/SECONDS)))
+          (println "offered")) 
+        (if (:shutdown? @pqa)
+          (clean-up-queue (:queue @pqa))
+          (do
+            (println "running future")
+            (future (try (deliver p (agent (provision d)))
+                         (catch Exception e
+                           (deliver p e))))
+            (recur (rest defs))))))))
 
 
 (defn add-ssh [inst]
@@ -10,6 +47,8 @@
            (client/new-runner (cloud/ip-address inst)))
     (catch Exception e
       (assoc inst :ssh-connection-error e))))
+
+
 
 (defmacro with-n-clients
   "Provisions n clients with instance name basename (plus unique
@@ -49,3 +88,15 @@
      (let [~ssh-conn-bind (:ssh-connection inst#)]
        (client/setup-client ~ssh-conn-bind (:name inst#))
        ~@body)))
+
+(defmacro with-queued-client
+  [ssh-conn-bind & body]
+  `(let [agnt# (-> queue
+                   deref ; the atom
+                   :queue
+                   .poll
+                   deref) ; the promise
+         ~ssh-conn-bind (client/new-runner (cloud/ip-address (deref agnt#)))]
+     (client/setup-client ~ssh-conn-bind (-> agnt# deref :name))
+     ~@body
+     (send agnt# cloud/unprovision)))
