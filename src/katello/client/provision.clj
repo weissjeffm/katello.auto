@@ -15,26 +15,31 @@
 (defn- clean-up-queue [q]
   (let [leftovers (java.util.ArrayList.)]
     (-> q (.drainTo leftovers))
-    (doseq [p leftovers]
-      (send @p cloud/unprovision))
-    (when-not (apply await-for 600000 leftovers)
-      (throw+ {:type ::cleanup-timeout
-               ::leftover-instance-agents leftovers}))))
+    (let [agents (map deref leftovers)]
+      (doseq [agnt agents]
+        (send agnt cloud/unprovision))
+      (when-not (apply await-for 600000 agents)
+        (throw+ {:type ::cleanup-timeout
+                 ::leftover-instance-agents agents})))))
 
 (defn fill-queue
   [qa]
-  (let [provision #(cloud/provision conf/*cloud-conn* %)]
-    (loop [defs (conf/client-defs "pre-provision")]
-      (let [d (first defs)
-            p (promise)]
-        (while (not (or (:shutdown? @qa)
-                        (.offer (:queue @qa) p 5 TimeUnit/SECONDS)))) 
-        (if (:shutdown? @qa)
-          (clean-up-queue (:queue @qa))
-          (do (future (try (deliver p (agent (provision d)))
-                           (catch Exception e
-                             (deliver p e))))
-              (recur (rest defs))))))))
+  (loop [defs (conf/client-defs "pre-provision"), p (promise)]  
+    (let [shutdown? (:shutdown? @qa)
+          accepted? (.offer (:queue @qa) p 5 TimeUnit/SECONDS)]
+      (cond shutdown? (do (deliver p (cloud/map->Instance {})) ; avoid undelivered promise
+                          (clean-up-queue (:queue @qa)))
+            accepted? (do (future (try
+                                    (->> defs
+                                         first
+                                         (cloud/provision conf/*cloud-conn*)
+                                         agent
+                                         (deliver p))
+                                    (catch Exception e
+                                      (deliver p e))))
+                          (recur (rest defs) (promise))) ; new promise
+            :else (recur defs p)) ; recur with same args if queue is full
+      )))
 
 (defn dequeue
   "Takes a Queue and returns the next instance from it, checking for
@@ -101,7 +106,9 @@
          ~ssh-conn-bind (client/new-runner (cloud/ip-address (deref agnt#)))]
      (client/setup-client ~ssh-conn-bind (-> agnt# deref :name))
      (try ~@body
-          (finally (send agnt# cloud/unprovision)))))
+          (finally
+            (when cloud/*kill-instance-when-finished*
+              (send agnt# cloud/unprovision))))))
 
 (defn init "Initialize the queue to n items" [n]
   (reset! queue (new-queue n))
