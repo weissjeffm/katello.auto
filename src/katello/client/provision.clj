@@ -5,12 +5,12 @@
                      [conf :as conf]))
   (:import [java.util.concurrent ArrayBlockingQueue TimeUnit]))
 
-(defrecord ProvisionQueue [queue shutdown?])
+(defrecord Queue [queue shutdown?])
 
-(def queue (atom nil))
+(defonce queue (atom nil))
 
 (defn new-queue [capacity]
-  (ProvisionQueue. (ArrayBlockingQueue. capacity) nil))
+  (Queue. (ArrayBlockingQueue. capacity) nil))
 
 (defn- clean-up-queue [q]
   (let [leftovers (java.util.ArrayList.)]
@@ -22,24 +22,28 @@
                ::leftover-instance-agents leftovers}))))
 
 (defn fill-queue
-  [pqa]
+  [qa]
   (let [provision #(cloud/provision conf/*cloud-conn* %)]
     (loop [defs (conf/client-defs "pre-provision")]
       (let [d (first defs)
             p (promise)]
-        (println p)
-        (while (not (or (:shutdown? @pqa)
-                        (.offer (:queue @pqa) p 5 TimeUnit/SECONDS)))
-          (println "offered")) 
-        (if (:shutdown? @pqa)
-          (clean-up-queue (:queue @pqa))
-          (do
-            (println "running future")
-            (future (try (deliver p (agent (provision d)))
-                         (catch Exception e
-                           (deliver p e))))
-            (recur (rest defs))))))))
+        (while (not (or (:shutdown? @qa)
+                        (.offer (:queue @qa) p 5 TimeUnit/SECONDS)))) 
+        (if (:shutdown? @qa)
+          (clean-up-queue (:queue @qa))
+          (do (future (try (deliver p (agent (provision d)))
+                           (catch Exception e
+                             (deliver p e))))
+              (recur (rest defs))))))))
 
+(defn dequeue
+  "Takes a Queue and returns the next instance from it, checking for
+  errors and throwing them if they occurred."
+  [q]
+  (let [agnt (-> q :queue .poll deref)]
+    (if (instance? Throwable agnt)
+      (throw+ agnt)
+      agnt)))
 
 (defn add-ssh [inst]
   (try
@@ -92,11 +96,20 @@
 (defmacro with-queued-client
   [ssh-conn-bind & body]
   `(let [agnt# (-> queue
-                   deref ; the atom
-                   :queue
-                   .poll
-                   deref) ; the promise
+                   deref                ; the atom
+                   dequeue) 
          ~ssh-conn-bind (client/new-runner (cloud/ip-address (deref agnt#)))]
      (client/setup-client ~ssh-conn-bind (-> agnt# deref :name))
-     ~@body
-     (send agnt# cloud/unprovision)))
+     (try ~@body
+          (finally (send agnt# cloud/unprovision)))))
+
+(defn init "Initialize the queue to n items" [n]
+  (reset! queue (new-queue n))
+  (future (fill-queue queue)))
+
+(defn shutdown
+  "Stop all remaining instances in the queue, takes the future
+  returned by init.  Blocks until all cleanup is done."
+  [f]
+  (swap! queue assoc :shutdown? true)
+  (deref f))
